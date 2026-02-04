@@ -1,8 +1,13 @@
 {
-  "servers": {
-    "Autonomous_Influencer_Network Docs": {
-      "type": "sse",
-      "url": "https://gitmcp.io/eyobed7b/Autonomous_Influencer_Network"
-    }
-  }
+	"servers": {
+		"Autonomous_Influencer_Network Docs": {
+			"type": "http",
+			"url": "https://gitmcp.io/eyobed7b/Autonomous_Influencer_Network"
+		},
+		"tenxfeedbackanalytics": {
+			"url": "https://mcppulse.10academy.org/proxy",
+			"type": "http"
+		}
+	},
+	"inputs": []
 }
