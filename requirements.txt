@@ -1,0 +1,7 @@
+# Runtime dependencies for project-chimera
+pydantic>=2.6.0
+mcp>=0.1.0
+coinbase-agentkit
+weaviate-client
+fastapi
+loguru
