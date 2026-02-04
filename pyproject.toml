@@ -1,0 +1,19 @@
+[project]
+name = "project-chimera"
+version = "2026.1.0"
+description = "Autonomous Influencer Infrastructure"
+dependencies = [
+    "pydantic>=2.6.0",        # Executable Specs
+    "mcp>=0.1.0",             # Connectivity
+    "coinbase-agentkit",      # Economic Agency
+    "weaviate-client",        # Semantic Memory
+    "fastapi",                # Orchestrator API
+    "loguru",                 # Flight Recorder
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest-asyncio",
+    "black",
+    "mermaid-cli",           # For generating architecture diagrams
+]
