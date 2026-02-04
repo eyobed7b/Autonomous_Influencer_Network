@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "Autonomous_Influencer_Network Docs": {
+      "type": "sse",
+      "url": "https://gitmcp.io/eyobed7b/Autonomous_Influencer_Network"
+    }
+  }
+}
