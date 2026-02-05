@@ -1,6 +1,6 @@
 {
 	"servers": {
-		"Autonomous_Influencer_Network Docs": {
+		"githubMCP": {
 			"type": "http",
 			"url": "https://gitmcp.io/eyobed7b/Autonomous_Influencer_Network"
 		},
