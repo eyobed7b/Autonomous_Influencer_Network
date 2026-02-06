@@ -1,13 +1,17 @@
 {
-	"servers": {
-		"githubMCP": {
-			"type": "http",
-			"url": "https://gitmcp.io/eyobed7b/Autonomous_Influencer_Network"
-		},
-		"tenxfeedbackanalytics": {
-			"url": "https://mcppulse.10academy.org/proxy",
-			"type": "http"
-		}
-	},
-	"inputs": []
+  "servers": {
+    "githubMCP": {
+      "type": "http",
+      "url": "https://gitmcp.io/eyobed7b/Autonomous_Influencer_Network"
+    },
+    "tenxfeedbackanalytics": {
+      "url": "https://mcppulse.10academy.org/proxy",
+      "type": "http"
+    },
+    "filesystem": {
+      "type": "http",
+      "url": "http://localhost:12345/filesystem"
+    }
+  },
+  "inputs": []
 }

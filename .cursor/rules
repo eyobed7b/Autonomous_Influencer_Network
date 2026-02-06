@@ -1,0 +1,31 @@
+# Agent Rules for Project Chimera
+
+Project Context: This is Project Chimera, an autonomous influencer system.
+
+Prime Directive: NEVER generate code without checking specs/ first.
+
+Traceability: Explain your plan before writing code.
+
+Additional Rules (Robust):
+
+- Always read relevant files in `specs/` before implementing changes.
+- Summarize the implementation plan (1-3 bullets) and wait for acknowledgement when the change is non-trivial.
+- For any code change, include: the spec reference, minimal unit tests, and updated docs or migration SQL when applicable.
+- Do not modify production-facing publish logic or security-critical code without a signed peer review and operator approval.
+- Avoid PII: never extract or publish personally identifiable information; if required, obtain explicit approval and follow compliance flows.
+- Safety & Moderation: integrate Judge results and enforce `confidence` thresholds; route low-confidence items to human review.
+- Concurrency: honor `state_version` OCC semantics when updating DB rows; prefer idempotent operations for external side-effects.
+- Observability: add structured logs, traces and metrics for new actions (`task_id`, `actor`, `state_version`).
+- Security: follow project-wide security rules (mTLS, signed JWTs, secrets in vault). Run Snyk/code scans on new code.
+- Commit messages: reference spec file and task id, include short summary and ticket (when present).
+- Tests: add unit tests for logic, and a minimal integration test for pipeline changes where feasible.
+- Human-in-the-loop: if uncertain about policy or spec interpretation, create a short RFC and loop in Product/Legal.
+
+Minimal Acceptance Checklist (before merging):
+- [ ] Confirmed relevant `specs/` section.
+- [ ] Written plan (1-3 bullets) in PR description.
+- [ ] Unit tests added and passing locally.
+- [ ] Security scan & basic linting passed.
+- [ ] Audit entry added (task_audit or PR note).
+
+Operator note: Use this rules file as the authoritative behavioral guide for automated agents and copilots working in this repo.
