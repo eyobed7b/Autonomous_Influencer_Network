@@ -41,3 +41,28 @@ AIN is composed of an orchestrator (Chimera), planner agents, worker pools, judg
 - Metrics: Prometheus for core SLOs (task latency, queue depth, publish success rate).
 - Tracing: OpenTelemetry across task lifecycle (Planner → Worker → Judge → Publisher).
 - Logs: Structured JSON logs sent to centralized logging (Elastic / Loki).
+
+## Messaging & API Patterns
+
+- Queue message format: JSON with envelope {"type": ..., "task": {...}} and optional headers for tracing and auth.
+- Prefer exactly-once semantics at the application level using idempotency keys and Postgres-based transactional receipts.
+- Use protobuf/gRPC for high-throughput internal RPCs; keep HTTP+JSON for cross-service vendor integrations.
+
+## Component Interfaces
+
+- Planner: exposes `fetch_trends()` (local) and `POST /tasks` (operator API) for manual task injection.
+- Worker: subscribes to queue topic `tasks.generate_video`, processes messages, and writes ACK/NACK to `tasks.acks` stream.
+- Judge: HTTP endpoint `POST /judge/evaluate` accepting `task_id` and artifact references, returning `safety_report`.
+- Publisher: HTTP client with pluggable adapters per channel (YouTube, TikTok), each adapter implements `publish(artifacts, metadata)`.
+
+## Deployment & CI
+
+- Deploy with Kubernetes; use Helm charts for templating. Canary rollouts for judge and publisher services.
+- CI: run unit tests, linting, contract tests (against `specs/api_contracts.md`) and basic integration smoke tests in pipeline.
+
+## Testing Strategy
+
+- Contract tests: validate that `fetch_trends()` and task messages meet `specs/api_contracts.md`.
+- Integration tests: end-to-end pipeline on a small persona using local object storage and test doubles for external channels.
+- Load tests: simulate planner → worker throughput and measure queue depth and task latency.
+
