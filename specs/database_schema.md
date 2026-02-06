@@ -1,100 +1,53 @@
-# Database Schema — Video Metadata ERD
+# Database Schema (ERD overview)
 
-This document defines the relational schema for storing videos, assets, personas, tags, and audit logs. The design favors small transactional updates (Postgres) and large binary storage in object storage.
+The primary relational store is Postgres. Below are the key tables and relationships.
 
-## Tables (schema + sample types)
+## Tables
 
-### videos
-
-- `id` UUID PRIMARY KEY
-- `persona_id` UUID REFERENCES personas(id)
-- `title` TEXT
-- `description` TEXT
-- `video_url` TEXT
-- `thumbnail_url` TEXT
-- `duration_seconds` INT
-- `status` TEXT CHECK (status IN ('draft','pending_review','published','rejected'))
-- `confidence` FLOAT
-- `state_version` INT NOT NULL DEFAULT 1
-- `created_at` TIMESTAMP WITH TIME ZONE DEFAULT now()
-- `updated_at` TIMESTAMP WITH TIME ZONE DEFAULT now()
-
-### assets
-
-- `id` UUID PRIMARY KEY
-- `video_id` UUID REFERENCES videos(id) ON DELETE CASCADE
-- `type` TEXT CHECK (type IN ('image','audio','raw'))
-- `url` TEXT
-- `checksum` TEXT
-- `created_at` TIMESTAMP WITH TIME ZONE DEFAULT now()
-
-### personas
-
-- `id` UUID PRIMARY KEY
+1) `personas`
+- `persona_id` UUID PK
 - `name` TEXT
-- `voice_profile` JSONB
-- `style_profile` JSONB
+- `tone_profile` JSONB
 
-### tags
-
-- `id` UUID PRIMARY KEY
-- `name` TEXT UNIQUE
-
-### video_tags
-
-- `video_id` UUID REFERENCES videos(id) ON DELETE CASCADE
-- `tag_id` UUID REFERENCES tags(id)
-- PRIMARY KEY(video_id, tag_id)
-
-### task_audit
-
-- `id` BIGSERIAL PRIMARY KEY
-- `task_id` UUID
-- `actor` TEXT
-- `action` TEXT
-- `state_before` JSONB
-- `state_after` JSONB
-- `state_version` INT
-- `timestamp` TIMESTAMP WITH TIME ZONE DEFAULT now()
-
-### publish_receipts
-
-- `id` UUID PRIMARY KEY
-- `video_id` UUID REFERENCES videos(id)
-- `channel` TEXT
-- `external_id` TEXT
+2) `videos`
+- `video_id` UUID PK
+- `persona_id` UUID FK -> personas(persona_id)
+- `title` TEXT
+- `state_version` INTEGER
 - `status` TEXT
-- `details` JSONB
-- `created_at` TIMESTAMP WITH TIME ZONE DEFAULT now()
+- `published_at` TIMESTAMP NULLABLE
+- `created_at` TIMESTAMP
 
-## ERD (textual)
+3) `tasks`
+- `task_id` UUID PK
+- `video_id` UUID NULLABLE FK -> videos(video_id)
+- `type` TEXT
+- `payload` JSONB
+- `state_version` INTEGER
+- `status` TEXT
+- `created_at` TIMESTAMP
 
-videos 1--_ assets
-videos _--_ tags (via video_tags)
-videos _--1 personas
-videos 1--\* publish_receipts
+4) `artifacts`
+- `artifact_id` UUID PK
+- `video_id` UUID FK -> videos(video_id)
+- `s3_path` TEXT
+- `kind` TEXT (script|render|thumbnail|audio)
 
-## Sample SQL (Postgres)
+5) `safety_reports`
+- `report_id` UUID PK
+- `task_id` UUID FK -> tasks(task_id)
+- `score` FLOAT
+- `issues` JSONB
+- `requires_human_review` BOOLEAN
 
-```sql
-CREATE TABLE videos (
-	id uuid PRIMARY KEY,
-	persona_id uuid REFERENCES personas(id),
-	title text,
-	description text,
-	video_url text,
-	thumbnail_url text,
-	duration_seconds int,
-	status text CHECK (status IN ('draft','pending_review','published','rejected')),
-	confidence float,
-	state_version int NOT NULL DEFAULT 1,
-	created_at timestamptz DEFAULT now(),
-	updated_at timestamptz DEFAULT now()
-);
-```
+6) `publish_receipts`
+- `publish_id` UUID PK
+- `video_id` UUID FK -> videos(video_id)
+- `channel` TEXT
+- `status` TEXT
+- `remote_id` TEXT
+- `timestamp` TIMESTAMP
 
-## Notes
-
-- Use `state_version` increments for OCC when workers update `videos` to avoid lost updates. Update statements must use `WHERE state_version = <expected>` and `SET state_version = state_version + 1`.
-- Store large binary assets in object storage; save URLs and checksums in Postgres.
-- `task_audit` provides a compact, append-only audit trail for replay and debugging.
+## Indexes & Constraints
+- Indexes on `tasks(state_version)`, `videos(state_version)`, `tasks(status)`, and `publish_receipts(channel)`.
+- Foreign keys enforce referential integrity; updates to `state_version` must be done via optimistic locking pattern.

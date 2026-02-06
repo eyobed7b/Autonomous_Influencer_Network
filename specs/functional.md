@@ -1,39 +1,28 @@
-# Functional Specifications
+# Functional Specifications (User Stories)
 
 ## Overview
+This document lists user stories and acceptance criteria for the core flows of Project Chimera.
 
-This document captures user stories, acceptance criteria, and primary flows for the Autonomous Influencer Network (AIN). Stories are written for agents, editors, orchestrators, and operators.
+### Planner / Trend ingestion
+- As an Agent, I need to fetch trends so that the system can detect candidate topics for content.
+  - Acceptance: system exposes a `fetch_trends()` contract; trends include id, title, score, source, timestamp, tags, and metrics.
 
-## User Stories
+### Generation pipeline
+- As an Orchestrator, I need to emit a `generate_video` task for a normalized trend so that workers can produce content.
+  - Acceptance: `generate_video` task includes `task_id`, `persona_id`, `payload` (trend metadata), and `state_version`.
 
-- As a Planner agent, I need to fetch trending topics from configured sources so that generated content is timely and relevant.
-- As a Generator agent, I need to produce a draft short-form video (script, assets, rough render) given a `persona_id` and trend prompt.
-- As a Judge agent, I need to run automated safety and brand-safety checks and return pass/fail and per-check confidence scores.
-- As an Editor (human), I need to review generated drafts with change requests and approve or reject for publish.
-- As a Publisher agent, I need to publish approved videos to target channels and report publish receipts and errors.
-- As an Orchestrator (Chimera), I need to create and manage DAGs of atomic tasks with `task_id` and `state_version` for OCC and replay.
-- As an Operator, I need node health and capacity metrics for load-balancing and capacity planning.
+### Worker processing
+- As a Worker, I need clear step inputs (script, assets, TTS params) so that each stage can be performed independently and checkpointed.
+  - Acceptance: workers read task payloads from queue and produce intermediate artifacts to object storage, updating task `state_version`.
 
-## Primary Flows
+### Safety / Judge
+- As a Safety service, I need access to final artifacts and context to produce a `safety_report` before publish.
+  - Acceptance: judge returns structured reasons, confidence, and any required human review flag.
 
-- Trend → Planner: Planner ingests trends, maps to persona(s), and emits `generate_video` tasks.
-- Generate → Judge → Human Review: Worker generates draft, Judge validates; low-confidence or failed checks route to Human Review.
-- Approve → Publish: Approved items are passed to Publisher which posts to channels and stores publish receipts.
+### Publisher
+- As a Publisher, I need to receive judged tasks and publish idempotently to target channel APIs, emitting receipts.
+  - Acceptance: receipts include `publish_id`, `channel`, `status`, `remote_id`, and `timestamp`.
 
-## Acceptance Criteria
-
-- All generated artifacts must include metadata: `persona_id`, `trend_source`, `task_id`, `confidence_score`.
-- Worker updates must include `state_version` increments to enable OCC.
-- Rejected content must include structured `rejection_reason` and optional `retry_suggestion`.
-- All tasks must produce an audit trail entry with `actor`, `action`, `task_id`, `timestamp`, `state_before`, `state_after`.
-
-## Edge Cases
-
-- Missing assets: Workers must return a deterministic error code and a list of missing asset URLs.
-- Partial success (some assets generated): Store partial artifacts with `partial: true` and allow resume.
-- Rate-limited publish: Publisher should enqueue publish retries with exponential backoff and surface final status.
-
-## Operational Acceptance
-
-- SLOs: 95th percentile latency for atomic tasks < 180s.
-- Data retention: Audit logs retained for 365 days; media retained per storage policy.
+### Operational
+- As an Operator, I need observability (metrics, traces, logs) across task lifecycles.
+  - Acceptance: Prometheus metrics for queue depth, task latency; traces for Planner→Worker→Judge→Publisher.

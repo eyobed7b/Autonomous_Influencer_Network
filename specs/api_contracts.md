@@ -1,122 +1,69 @@
-# API Contracts (Agent Message Schemas)
+# API Contracts
 
-This file describes the JSON contracts used between Chimera, agents, and workers. All messages are UTF-8 JSON, follow snake_case keys, and must validate against the schemas below.
+This file defines the JSON inputs/outputs for core agent interactions.
 
-## Common Headers
+## Trend Fetcher Output
 
-- `task_id` (string, uuid): global unique id for the task.
-- `created_by` (string): actor that created the task (planner, operator).
-- `created_at` (string, RFC3339 timestamp).
+Type: list of objects
 
-## Agent Task Message (input)
+Example:
 
-Example (generate_video task):
-
-```json
 {
-  "task_id": "11111111-1111-1111-1111-111111111111",
+  "trend_id": "str-uuid",
+  "title": "Short headline",
+  "score": 0.87,
+  "source": "twitter",
+  "timestamp": "2026-02-06T12:34:56Z",
+  "tags": ["tag1","tag2"],
+  "metrics": {"mentions": 1234, "engagement": 0.42}
+}
+
+Contract requirements:
+- `fetch_trends()` MUST return a list of trend objects as above.
+
+## generate_video Task (Planner → Queue)
+
+{
+  "task_id": "uuid",
   "type": "generate_video",
-  "persona_id": "22222222-2222-2222-2222-222222222222",
-  "payload": {
-    "prompt": "Short comedic skit about coffee and productivity",
-    "assets": [],
-    "length_seconds": 15,
-    "style": "fast_cuts,bright_colors"
-  },
-  "meta": {
-    "created_by": "planner",
-    "created_at": "2026-02-05T12:00:00Z"
-  },
-  "state_version": 1
+  "persona_id": "persona-123",
+  "payload": { /* contains trend object plus normalization */ },
+  "state_version": 1,
+  "created_at": "ISO-8601"
 }
-```
 
-Validation rules:
+## Worker ACK/NACK
 
-- `type` must be one of the registered task types (see spec registry).
-- `state_version` is the expected current version for OCC updates.
-
-## Agent Response (output)
-
-Standard response fields for workers:
-
-```json
+Success:
 {
-  "task_id": "...",
+  "task_id": "uuid",
   "status": "completed",
-  "result": {
-    /* type-specific */
-  },
-  "errors": [],
   "state_version": 2,
-  "confidence": 0.92
+  "artifacts": {"s3_path": "s3://.../render.mp4"}
 }
-```
 
-- `status`: one of `completed`, `failed`, `in_progress`, `retriable`.
-- `errors`: structured list with `code`, `message`, and optional `details`.
-
-## generate_video.payload
-
-Fields:
-
-- `prompt` (string, required)
-- `assets` (array of {type, url}, optional)
-- `length_seconds` (int)
-- `style` (string, optional)
-
-Example result for `generate_video`:
-
-```json
+Failure:
 {
-  "video_url": "https://s3/.../video.mp4",
-  "thumbnail_url": "https://s3/.../thumb.jpg",
-  "duration_seconds": 15,
-  "render_log": "https://logs/...",
-  "safety_report": {
-    "passed": true,
-    "checks": [
-      { "name": "no_pii", "passed": true, "confidence": 0.98 },
-      { "name": "brand_safety", "passed": true, "confidence": 0.95 }
-    ]
-  }
+  "task_id": "uuid",
+  "status": "failed",
+  "state_version": 1,
+  "errors": [{"code":"TRANSFORM_ERROR","message":"..."}]
 }
-```
 
-## fetch_trends.payload
+## Judge Response
 
-```json
 {
-  "source": "twitter|youtube|trend_api",
-  "region": "us",
-  "limit": 10
+  "task_id": "uuid",
+  "safety_report": {"score": 0.96, "issues": [], "requires_human_review": false}
 }
-```
 
-Result:
+## Publisher Receipt
 
-```json
 {
-  "trends": [{ "id": "t1", "title": "...", "score": 0.85 }]
+  "publish_id": "uuid",
+  "task_id": "uuid",
+  "channel": "youtube",
+  "status": "posted",
+  "remote_id": "remote-123",
+  "timestamp": "ISO-8601"
 }
-```
-
-## Error contract
-
-Standard error object:
-
-```json
-{
-  "code": "INVALID_PAYLOAD",
-  "message": "Detailed message",
-  "details": {
-    /* optional */
-  }
-}
-```
-
-## Idempotency & Ordering
-
-- Publishers and external side-effects MUST support idempotency via `task_id` and explicit `idempotency_key` when present.
-
-Agents must validate messages against these schemas and return informative errors for invalid inputs.
