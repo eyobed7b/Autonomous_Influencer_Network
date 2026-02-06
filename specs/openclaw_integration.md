@@ -27,10 +27,10 @@ Example request payload
   "node_id": "uuid-1234",
   "hostname": "chimera-01.prod",
   "version": "1.2.0",
-  "capacity": {"workers": 24, "available_slots": 5},
-  "queue_depth": {"planner": 3, "worker": 120},
+  "capacity": { "workers": 24, "available_slots": 5 },
+  "queue_depth": { "planner": 3, "worker": 120 },
   "last_heartbeat": "2026-02-06T12:34:56Z",
-  "tags": ["region:us-east-1","gpu:true"],
+  "tags": ["region:us-east-1", "gpu:true"],
   "uptime_seconds": 86400
 }
 ```
